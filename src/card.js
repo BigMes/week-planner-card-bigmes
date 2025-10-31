@@ -180,6 +180,7 @@ export class WeekPlannerCard extends LitElement {
         this._locationLink = config.locationLink ?? 'https://www.google.com/maps/search/?api=1&query=';
         this._showTitle = config.showTitle ?? true;
         this._showDescription = config.showDescription ?? false;
+        this._showUidInDialog = config.showUidInDialog ?? false;
         this._showLocation = config.showLocation ?? false;
         this._hidePastEvents = config.hidePastEvents ?? false;
         this._hideDaysWithoutEvents = config.hideDaysWithoutEvents ?? false;
@@ -521,6 +522,7 @@ export class WeekPlannerCard extends LitElement {
                         data-additional-entities="${event.calendars.join(',')}"
                         data-summary="${event.summary}"
                         data-location="${event.location ?? ''}"
+                        data-uid="${event.uid ?? ''}"
                         data-start-hour="${event.start.toFormat('H')}"
                         data-start-minute="${event.start.toFormat('mm')}"
                         data-end-hour="${event.end.toFormat('H')}"
@@ -632,6 +634,15 @@ export class WeekPlannerCard extends LitElement {
                             ${this._renderEventDetailsDate()}
                         </div>
                     </div>
+                    ${this._showUidInDialog && this._currentEventDetails.uid ?
+                        html`
+                            <div class="uid">
+                                <ha-icon icon="mdi:identifier"></ha-icon>
+                                <div class="info">${this._currentEventDetails.uid}</div>
+                            </div>
+                        ` :
+                        ''
+                    }
                     ${this._currentEventDetails.location ?
                         html`
                             <div class="location">
@@ -902,7 +913,8 @@ export class WeekPlannerCard extends LitElement {
                 calendars: [calendar.entity],
                 calendarSorting: calendarSorting,
                 calendarNames: [calendar.name],
-                class: this._getEventClass(startDate, endDate, fullDay)
+                class: this._getEventClass(startDate, endDate, fullDay),
+                uid: event.uid ?? null
             }
             this._events[dateKey].push(eventKey);
         }
