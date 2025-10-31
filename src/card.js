@@ -89,6 +89,7 @@ export class WeekPlannerCard extends LitElement {
     _showNavigation;
     _navigationOffset = 0;
     _updateEventsTimeouts = [];
+    _showNavigationLabel;
 
     /**
      * Get config element
@@ -174,12 +175,12 @@ export class WeekPlannerCard extends LitElement {
         this._dayFormat = config.dayFormat ?? null;
         this._dateFormat = config.dateFormat ?? 'cccc d LLLL yyyy';
         this._timeFormat = config.timeFormat ?? 'HH:mm';
-        this._navigationLabel = config.navigationLabel ?? null;
+        this._showNavigationLabel = config.showNavigationLabel ?? true;
         this._navigationLabelFormat = config.navigationLabelFormat ?? 'MMMM';
-        this._navigationLabelTemplate = config.navigationLabelTemplate ?? null;
         this._locationLink = config.locationLink ?? 'https://www.google.com/maps/search/?api=1&query=';
         this._showTitle = config.showTitle ?? true;
         this._showDescription = config.showDescription ?? false;
+        this._showUidInDialog = config.showUidInDialog ?? false;
         this._showLocation = config.showLocation ?? false;
         this._hidePastEvents = config.hidePastEvents ?? false;
         this._hideDaysWithoutEvents = config.hideDaysWithoutEvents ?? false;
@@ -368,21 +369,27 @@ export class WeekPlannerCard extends LitElement {
                     <li @click="${this._handleNavigationOriginalClick}"><ha-icon icon="mdi:circle-medium"></ha-icon></li>
                     <li @click="${this._handleNavigationNextClick}"><ha-icon icon="mdi:arrow-right"></ha-icon></li>
                 </ul>
-                <div class="month">${this._getNavigationLabel()}</div>
+                ${this._showNavigationLabel ? 
+                    html`<div class="month">${this._getNavigationLabel()}</div>` : 
+                    ''
+                }
             </div>
         `;
     }
 
     _getNavigationLabel() {
-        if (this._navigationLabel) {
-            return this._navigationLabel;
-        }
+        if (this._showNavigationLabel) {
+            const template = this._navigationLabelFormat;
 
-        if (this._navigationLabelTemplate) {
-            return this._formatNavigationLabel(this._navigationLabelTemplate);
-        }
+            // Support explicit start/end templates like "{start: MMM} - {end: MMM yyyy}"
+            if (template?.includes('{')) {
+                return this._formatNavigationLabel(template);
+            }
 
-        return this._startDate.toFormat(this._navigationLabelFormat);
+            // Default: single-date formatting
+            return this._startDate.toFormat(template);
+        }
+        return '';
     }
 
     _formatNavigationLabel(template) {
@@ -523,6 +530,7 @@ export class WeekPlannerCard extends LitElement {
                         data-additional-entities="${event.calendars.join(',')}"
                         data-summary="${event.summary}"
                         data-location="${event.location ?? ''}"
+                        data-uid="${event.uid ?? ''}"
                         data-start-hour="${event.start.toFormat('H')}"
                         data-start-minute="${event.start.toFormat('mm')}"
                         data-end-hour="${event.end.toFormat('H')}"
@@ -634,6 +642,15 @@ export class WeekPlannerCard extends LitElement {
                             ${this._renderEventDetailsDate()}
                         </div>
                     </div>
+                    ${this._showUidInDialog && this._currentEventDetails.uid ?
+                        html`
+                            <div class="uid">
+                                <ha-icon icon="mdi:identifier"></ha-icon>
+                                <div class="info">${this._currentEventDetails.uid}</div>
+                            </div>
+                        ` :
+                        ''
+                    }
                     ${this._currentEventDetails.location ?
                         html`
                             <div class="location">
@@ -904,7 +921,8 @@ export class WeekPlannerCard extends LitElement {
                 calendars: [calendar.entity],
                 calendarSorting: calendarSorting,
                 calendarNames: [calendar.name],
-                class: this._getEventClass(startDate, endDate, fullDay)
+                class: this._getEventClass(startDate, endDate, fullDay),
+                uid: event.uid ?? null
             }
             this._events[dateKey].push(eventKey);
         }
